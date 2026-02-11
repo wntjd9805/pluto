@@ -192,7 +192,9 @@ configure_args=(
 ./configure "${configure_args[@]}"
 
 echo "[pluto-install] normalizing autotools timestamps"
-find . -type f \( -name 'Makefile.in' -o -name 'configure' -o -name 'aclocal.m4' \) -exec touch {} +
+# Avoid unintended automake reruns from tiny mtime skews (e.g. aclocal.m4 > Makefile.in).
+find . -type f \( -name 'aclocal.m4' -o -name 'configure.ac' -o -name 'Makefile.am' -o -path '*/m4/*.m4' \) -exec touch {} +
+find . -type f \( -name 'configure' -o -name 'Makefile.in' \) -exec touch {} +
 
 echo "[pluto-install] building"
 make -j"$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)"
