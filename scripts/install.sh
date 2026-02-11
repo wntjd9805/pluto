@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
 
 LLVM_PREFIX="${LLVM_PREFIX:-/usr/local}"
 CLANG_PREFIX="${CLANG_PREFIX:-}"
@@ -16,7 +16,7 @@ INSTALL_DEPS=1
 
 usage() {
   cat <<'EOF'
-Usage: ./install.sh [options]
+Usage: ./scripts/install.sh [options]
 
 Options:
   --llvm-prefix <path>   LLVM prefix for llvm-config/libs/bin (default: /usr/local)
@@ -162,7 +162,7 @@ if ! command -v FileCheck >/dev/null 2>&1; then
 FileCheck not found in PATH.
 Use one of:
   1) export PATH=$HYPERF_HOME/llvm-project/build/bin:$PATH
-  2) ./install.sh --filecheck-bin /path/to/llvm-project/build/bin
+  2) ./scripts/install.sh --filecheck-bin /path/to/llvm-project/build/bin
   3) sudo ln -s /path/to/llvm-project/build/bin/FileCheck /usr/local/bin/FileCheck
 EOF
   exit 1
@@ -191,6 +191,9 @@ configure_args=(
 )
 ./configure "${configure_args[@]}"
 
+echo "[pluto-install] normalizing autotools timestamps"
+find . -type f \( -name 'Makefile.in' -o -name 'configure' -o -name 'aclocal.m4' \) -exec touch {} +
+
 echo "[pluto-install] building"
 make -j"$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)"
 
@@ -206,7 +209,7 @@ if [[ "${DO_INSTALL}" -eq 1 ]]; then
 make install failed (likely permission issue for prefix: ${INSTALL_PREFIX}).
 Try one of:
   1) sudo make install
-  2) ./install.sh --prefix \$HOME/.local
+  2) ./scripts/install.sh --prefix \$HOME/.local
 EOF
     exit 1
   fi
