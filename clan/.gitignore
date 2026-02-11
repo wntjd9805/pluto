@@ -23,7 +23,7 @@ include/clan/macros.h
 .dirstamp
 
 # Binary
-clan
+/clan
 
 # Lex/Yacc
 source/parser.[ch]
