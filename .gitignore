@@ -125,3 +125,12 @@ libtool
 getversion.sh
 missing
 test_libpluto
+
+omp_exec_small
+omp_exec_standard
+omp_exec_large
+
+*.par.c
+*.tiled.c
+*.pluto.c
+*.cloog
