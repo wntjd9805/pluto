@@ -1059,7 +1059,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 versioninfo = @versioninfo@
 @HAVE_CLANG_TRUE@@HAVE_CXX11_TRUE@MAYBE_INTERFACE = interface
-SUBDIRS = . $(MAYBE_INTERFACE) doc
+SUBDIRS = . $(MAYBE_INTERFACE)
 DIST_SUBDIRS = $(MAYBE_INTERFACE) doc
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = nostdinc subdir-objects
@@ -3136,8 +3136,6 @@ uninstall-am: uninstall-libLTLIBRARIES uninstall-local \
 
 dist-hook:
 	echo @GIT_HEAD_VERSION@ > $(distdir)/GIT_HEAD_ID
-	(cd doc; make manual.pdf)
-	cp doc/manual.pdf $(distdir)/doc/
 
 gitversion.h: @GIT_HEAD@
 	$(AM_V_GEN)echo '#define GIT_HEAD_ID "'@GIT_HEAD_VERSION@'"' > $@

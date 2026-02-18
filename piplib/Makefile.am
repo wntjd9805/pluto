@@ -14,7 +14,7 @@
 #############################################################################
 
 AUTOMAKE_OPTIONS = subdir-objects
-SUBDIRS = . example doc test
+SUBDIRS = . example test
 ACLOCAL_AMFLAGS = -I m4
 
 #############################################################################
@@ -91,7 +91,6 @@ uninstall-local:
 	done
 
 dist-hook:
-	(cd doc; make piplib.pdf) && cp doc/piplib.pdf $(distdir)/doc/
 	$(top_builddir)/genversion.sh > $(distdir)/PIPLIB_HEAD
 	
 check:

@@ -13923,10 +13923,7 @@ printf "%s\n" "no" >&6; }
 fi
 
 
-if test "x$TEXINFO" != "xyes"
-then :
-  as_fn_error $? "Please install texinfo." "$LINENO" 5
-fi
+
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for an ANSI C-conforming const" >&5
 printf %s "checking for an ANSI C-conforming const... " >&6; }
@@ -16942,5 +16939,4 @@ echo "              *-----------------------------------------------*/"
 echo "It appears that your system is OK to start Candl compilation. You need"
 echo "now to type \"make\". Lastly type \"make install\" to install Candl on"
 echo "your system (log as root if necessary)."
-
 

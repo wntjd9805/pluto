@@ -6,7 +6,7 @@ interface/extract_interface$(BUILD_EXEEXT): FORCE
 	$(MAKE) $(AM_MAKEFLAGS) -C interface extract_interface$(BUILD_EXEEXT)
 endif
 endif
-SUBDIRS = . $(MAYBE_INTERFACE) doc
+SUBDIRS = . $(MAYBE_INTERFACE)
 DIST_SUBDIRS = $(MAYBE_INTERFACE) doc
 
 ACLOCAL_AMFLAGS = -I m4
@@ -690,8 +690,6 @@ EXTRA_DIST = \
 
 dist-hook:
 	echo @GIT_HEAD_VERSION@ > $(distdir)/GIT_HEAD_ID
-	(cd doc; make manual.pdf)
-	cp doc/manual.pdf $(distdir)/doc/
 
 pkgconfigdir=$(pkgconfig_libdir)
 pkgconfig_DATA = $(pkgconfig_libfile)

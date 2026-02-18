@@ -49,7 +49,7 @@ endif
 CLAN_INCLUDES = -I. -I$(top_builddir)/include -I$(top_srcdir)/include
 
 AUTOMAKE_OPTIONS = subdir-objects
-SUBDIRS = $(MAYBE_OSL) . doc tests
+SUBDIRS = $(MAYBE_OSL) . tests
 DIST_SUBDIRS = $(MAYBE_OSL) . doc tests
 ACLOCAL_AMFLAGS = -I m4
 

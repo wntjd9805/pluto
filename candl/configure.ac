@@ -81,8 +81,7 @@ AX_CC_MAXOPT
 AC_SUBST(CFLAGS_WARN)
 AX_CFLAGS_WARN_ALL(CFLAGS_WARN)
 
-AC_CHECK_PROG(TEXINFO, makeinfo, yes)
-AS_IF([test "x$TEXINFO" != "xyes"], [AC_MSG_ERROR([Please install texinfo.])])
+AC_CHECK_PROG(TEXINFO, makeinfo, yes, no)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -293,4 +292,3 @@ echo "              *-----------------------------------------------*/"
 echo "It appears that your system is OK to start Candl compilation. You need"
 echo "now to type \"make\". Lastly type \"make install\" to install Candl on"
 echo "your system (log as root if necessary)."
-

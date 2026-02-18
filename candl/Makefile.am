@@ -43,7 +43,7 @@ if BUNDLED_PIPLIB
 endif
 
 AUTOMAKE_OPTIONS = subdir-objects
-SUBDIRS         = $(MAYBE_OSL) $(MAYBE_PIPLIB) . doc tests
+SUBDIRS         = $(MAYBE_OSL) $(MAYBE_PIPLIB) . tests
 DIST_SUBDIRS    = $(MAYBE_OSL) $(MAYBE_PIPLIB) . doc tests
 ACLOCAL_AMFLAGS = -I m4
 
