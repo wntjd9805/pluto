@@ -1,7 +1,7 @@
 #!/bin/sh
 
 EXEEXT=
-srcdir=/root/pluto/isl
+srcdir=/root/hitune/pluto/isl
 
 for i in $srcdir/test_inputs/codegen/*.st \
 		$srcdir/test_inputs/codegen/cloog/*.st; do

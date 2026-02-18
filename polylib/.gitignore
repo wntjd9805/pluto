@@ -78,3 +78,12 @@ testCompressParms64
 testehrhart64
 testlib
 verif_ehrhart64
+
+# Keep vendored source/interface files trackable in this mono-repo.
+!include/polylib/arithmetic_errors.h
+!include/polylib/arithmetique.h
+!include/polylib/polylib.h
+!polylib64.pc.in
+!polylib64.pc
+!polylib64-uninstalled.pc
+!polylib64-uninstalled.sh

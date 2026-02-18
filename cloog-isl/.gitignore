@@ -40,3 +40,14 @@ test/generate_test*
 test/test_main*
 test/test_test*
 test/temp_generated*
+
+# Keep vendored source/interface files trackable in this mono-repo.
+!cloog-isl.pc.in
+!cloog-isl.pc
+!cloog-isl-uninstalled.pc
+!cloog-isl-uninstalled.sh
+!doc/gitversion.texi
+!genversion.sh
+!include/cloog/version.h
+!source/version.c
+!version.h

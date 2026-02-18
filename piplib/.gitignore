@@ -46,3 +46,7 @@ pip_dp
 
 source/.dirstamp
 
+# Keep vendored source/interface files trackable in this mono-repo.
+!doc/gitversion.texi
+!genversion.sh
+!version.h

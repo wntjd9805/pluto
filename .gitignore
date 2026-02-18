@@ -134,3 +134,10 @@ omp_exec_large
 *.tiled.c
 *.pluto.c
 *.cloog
+
+# Local experiment artifacts
+.outfilename
+.srcfilename
+.regtile
+unit_tests
+*~

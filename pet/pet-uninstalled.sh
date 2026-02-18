@@ -2,11 +2,11 @@
 prefix="/usr/local"
 exec_prefix="${prefix}"
 bindir="${exec_prefix}/bin"
-libdir="/root/pluto/pet/.libs"
+libdir="/root/hitune/pluto/pet/.libs"
 datarootdir="${prefix}/share"
 datadir="${datarootdir}"
 sysconfdir="${prefix}/etc"
-includedir="/root/pluto/pet/./include"
+includedir="/root/hitune/pluto/pet/./include"
 package="pet"
 suffix=""
 

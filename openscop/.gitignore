@@ -26,3 +26,6 @@ include/osl/scop.h
 doc/
 build*/
 tests/
+
+# Keep vendored source files trackable in this mono-repo.
+!include/osl/scop.h

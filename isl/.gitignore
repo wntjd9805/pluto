@@ -57,3 +57,14 @@ test-driver
 isl_srcdir.c
 bound_test.sh
 pip_test.sh
+
+# Keep vendored source/interface files trackable in this mono-repo.
+!include/isl/stdint.h
+!gitversion.h
+!isl.pc.in
+!isl.pc
+!isl-uninstalled.pc
+!isl-uninstalled.sh
+!isl_srcdir.c
+!bound_test.sh
+!pip_test.sh

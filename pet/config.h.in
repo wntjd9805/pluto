@@ -75,6 +75,9 @@
 /* Define if llvm/Option/Arg.h exists */
 #undef HAVE_LLVM_OPTION_ARG_H
 
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
 /* Define if SourceManager has a setMainFileID method */
 #undef HAVE_SETMAINFILEID
 
@@ -84,9 +87,6 @@
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
-
-/* Define to 1 if you have the <stdio.h> header file. */
-#undef HAVE_STDIO_H
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
@@ -160,9 +160,7 @@
 /* Define if CompilerInvocation::setLangDefaults takes 5 arguments */
 #undef SETLANGDEFAULTS_TAKES_5_ARGUMENTS
 
-/* Define to 1 if all of the C90 standard headers exist (not just the ones
-   required in a freestanding environment). This macro is provided for
-   backward compatibility; new code need not use it. */
+/* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
 /* Define to TypedefDecl for older versions of clang */

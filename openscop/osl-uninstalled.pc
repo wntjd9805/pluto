@@ -2,11 +2,11 @@
 prefix=/usr/local
 exec_prefix=${prefix}
 bindir=${exec_prefix}/bin
-libdir=/root/pluto/openscop/.libs
+libdir=/root/hitune/pluto/openscop/.libs
 datarootdir=${prefix}/share
 datadir=${datarootdir}
 sysconfdir=${prefix}/etc
-includedir=/root/pluto/openscop/./include
+includedir=/root/hitune/pluto/openscop/./include
 package=osl
 suffix=
 
