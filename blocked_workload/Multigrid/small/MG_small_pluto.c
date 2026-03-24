@@ -1,9 +1,4 @@
 #define N 32
-#define BLOCK_SIZE_SMOOTH_DEFAULT 2
-#define BLOCK_SIZE_RESIDUAL_DEFAULT 16
-#define BLOCK_SIZE_RESTRICT_DEFAULT 16
-#define BLOCK_SIZE_COARSE_DEFAULT 8
-#define BLOCK_SIZE_PROLONG_DEFAULT 32
 
 #include <math.h>
 #include <stdio.h>
@@ -21,46 +16,11 @@ extern "C" {
 #error "N must be defined before including multigrid_shared.h"
 #endif
 
-#ifndef BLOCK_SIZE_SMOOTH_DEFAULT
-#error "BLOCK_SIZE_SMOOTH_DEFAULT must be defined before including multigrid_shared.h"
-#endif
-
-#ifndef BLOCK_SIZE_RESIDUAL_DEFAULT
-#error "BLOCK_SIZE_RESIDUAL_DEFAULT must be defined before including multigrid_shared.h"
-#endif
-
-#ifndef BLOCK_SIZE_RESTRICT_DEFAULT
-#error "BLOCK_SIZE_RESTRICT_DEFAULT must be defined before including multigrid_shared.h"
-#endif
-
-#ifndef BLOCK_SIZE_COARSE_DEFAULT
-#error "BLOCK_SIZE_COARSE_DEFAULT must be defined before including multigrid_shared.h"
-#endif
-
-#ifndef BLOCK_SIZE_PROLONG_DEFAULT
-#error "BLOCK_SIZE_PROLONG_DEFAULT must be defined before including multigrid_shared.h"
-#endif
-
 #define NC (N / 2)
 #define PRE_SMOOTH 2
 #define POST_SMOOTH 2
 #define COARSE_ITERS 10
 
-#ifndef BLOCK_SIZE_SMOOTH
-#define BLOCK_SIZE_SMOOTH BLOCK_SIZE_SMOOTH_DEFAULT
-#endif
-#ifndef BLOCK_SIZE_RESIDUAL
-#define BLOCK_SIZE_RESIDUAL BLOCK_SIZE_RESIDUAL_DEFAULT
-#endif
-#ifndef BLOCK_SIZE_RESTRICT
-#define BLOCK_SIZE_RESTRICT BLOCK_SIZE_RESTRICT_DEFAULT
-#endif
-#ifndef BLOCK_SIZE_COARSE
-#define BLOCK_SIZE_COARSE BLOCK_SIZE_COARSE_DEFAULT
-#endif
-#ifndef BLOCK_SIZE_PROLONG
-#define BLOCK_SIZE_PROLONG BLOCK_SIZE_PROLONG_DEFAULT
-#endif
 
 static void init_random_2d(double *A, int m, int n)
 {
@@ -101,33 +61,33 @@ static void *xmalloc_align64(size_t bytes)
 
 static void smooth_gs_inplace(double u[N][N], double f[N][N], int sweeps)
 {
-#pragma scop
   for (int s = 0; s < sweeps; ++s) {
-    for (int bi = 0; bi < (N + BLOCK_SIZE_SMOOTH - 1) / BLOCK_SIZE_SMOOTH; ++bi) {
-      for (int bj = 0; bj < (N + BLOCK_SIZE_SMOOTH - 1) / BLOCK_SIZE_SMOOTH; ++bj) {
-        for (int ii = 0; ii < BLOCK_SIZE_SMOOTH; ++ii) {
-          for (int jj = 0; jj < BLOCK_SIZE_SMOOTH; ++jj) {
-            if (bi * BLOCK_SIZE_SMOOTH + ii < N &&
-                bj * BLOCK_SIZE_SMOOTH + jj < N) {
-              if (bi * BLOCK_SIZE_SMOOTH + ii > 0 &&
-                  bj * BLOCK_SIZE_SMOOTH + jj > 0 &&
-                  bi * BLOCK_SIZE_SMOOTH + ii < N - 1 &&
-                  bj * BLOCK_SIZE_SMOOTH + jj < N - 1) {
-                u[bi * BLOCK_SIZE_SMOOTH + ii][bj * BLOCK_SIZE_SMOOTH + jj] =
-                    (f[bi * BLOCK_SIZE_SMOOTH + ii][bj * BLOCK_SIZE_SMOOTH + jj] +
-                     u[bi * BLOCK_SIZE_SMOOTH + ii - 1][bj * BLOCK_SIZE_SMOOTH + jj] +
-                     u[bi * BLOCK_SIZE_SMOOTH + ii + 1][bj * BLOCK_SIZE_SMOOTH + jj] +
-                     u[bi * BLOCK_SIZE_SMOOTH + ii][bj * BLOCK_SIZE_SMOOTH + jj - 1] +
-                     u[bi * BLOCK_SIZE_SMOOTH + ii][bj * BLOCK_SIZE_SMOOTH + jj + 1]) *
+    for (int bi = 0; bi < (N + 2 - 1) / 2; ++bi) {
+      for (int bj = 0; bj < (N + 2 - 1) / 2; ++bj) {
+#pragma scop
+        for (int ii = 0; ii < 2; ++ii) {
+          for (int jj = 0; jj < 2; ++jj) {
+            if (bi * 2 + ii < N &&
+                bj * 2 + jj < N) {
+              if (bi * 2 + ii > 0 &&
+                  bj * 2 + jj > 0 &&
+                  bi * 2 + ii < N - 1 &&
+                  bj * 2 + jj < N - 1) {
+                u[bi * 2 + ii][bj * 2 + jj] =
+                    (f[bi * 2 + ii][bj * 2 + jj] +
+                     u[bi * 2 + ii - 1][bj * 2 + jj] +
+                     u[bi * 2 + ii + 1][bj * 2 + jj] +
+                     u[bi * 2 + ii][bj * 2 + jj - 1] +
+                     u[bi * 2 + ii][bj * 2 + jj + 1]) *
                     0.25;
               }
             }
           }
         }
+#pragma endscop
       }
     }
   }
-#pragma endscop
 }
 
 static void compute_residual(double u[N][N], double f[N][N], double r[N][N])
@@ -141,22 +101,22 @@ static void compute_residual(double u[N][N], double f[N][N], double r[N][N])
     r[N - 1][j] = 0.0;
   }
 
-    for (int bi = 0; bi < (N + BLOCK_SIZE_RESIDUAL - 1) / BLOCK_SIZE_RESIDUAL; ++bi) {
-      for (int bj = 0; bj < (N + BLOCK_SIZE_RESIDUAL - 1) / BLOCK_SIZE_RESIDUAL; ++bj) {
+    for (int bi = 0; bi < (N + 16 - 1) / 16; ++bi) {
+      for (int bj = 0; bj < (N + 16 - 1) / 16; ++bj) {
 #pragma scop
-        for (int ii = 0; ii < BLOCK_SIZE_RESIDUAL; ++ii) {
-          for (int jj = 0; jj < BLOCK_SIZE_RESIDUAL; ++jj) {
-            if (bi * BLOCK_SIZE_RESIDUAL + ii > 0 &&
-                bj * BLOCK_SIZE_RESIDUAL + jj > 0 &&
-                bi * BLOCK_SIZE_RESIDUAL + ii < N - 1 &&
-                bj * BLOCK_SIZE_RESIDUAL + jj < N - 1) {
-              r[bi * BLOCK_SIZE_RESIDUAL + ii][bj * BLOCK_SIZE_RESIDUAL + jj] =
-                  f[bi * BLOCK_SIZE_RESIDUAL + ii][bj * BLOCK_SIZE_RESIDUAL + jj] +
-                  u[bi * BLOCK_SIZE_RESIDUAL + ii - 1][bj * BLOCK_SIZE_RESIDUAL + jj] +
-                  u[bi * BLOCK_SIZE_RESIDUAL + ii + 1][bj * BLOCK_SIZE_RESIDUAL + jj] +
-                  u[bi * BLOCK_SIZE_RESIDUAL + ii][bj * BLOCK_SIZE_RESIDUAL + jj - 1] +
-                  u[bi * BLOCK_SIZE_RESIDUAL + ii][bj * BLOCK_SIZE_RESIDUAL + jj + 1] -
-                  4.0 * u[bi * BLOCK_SIZE_RESIDUAL + ii][bj * BLOCK_SIZE_RESIDUAL + jj];
+        for (int ii = 0; ii < 16; ++ii) {
+          for (int jj = 0; jj < 16; ++jj) {
+            if (bi * 16 + ii > 0 &&
+                bj * 16 + jj > 0 &&
+                bi * 16 + ii < N - 1 &&
+                bj * 16 + jj < N - 1) {
+              r[bi * 16 + ii][bj * 16 + jj] =
+                  f[bi * 16 + ii][bj * 16 + jj] +
+                  u[bi * 16 + ii - 1][bj * 16 + jj] +
+                  u[bi * 16 + ii + 1][bj * 16 + jj] +
+                  u[bi * 16 + ii][bj * 16 + jj - 1] +
+                  u[bi * 16 + ii][bj * 16 + jj + 1] -
+                  4.0 * u[bi * 16 + ii][bj * 16 + jj];
             }
           }
         }
@@ -176,25 +136,25 @@ static void restrict_full_weighting(double r_f[N][N], double f_c[NC][NC])
     f_c[NC - 1][j] = 0.0;
   }
 
-    for (int bI = 0; bI < (NC + BLOCK_SIZE_RESTRICT - 1) / BLOCK_SIZE_RESTRICT; ++bI) {
-      for (int bJ = 0; bJ < (NC + BLOCK_SIZE_RESTRICT - 1) / BLOCK_SIZE_RESTRICT; ++bJ) {
+    for (int bI = 0; bI < (NC + 16 - 1) / 16; ++bI) {
+      for (int bJ = 0; bJ < (NC + 16 - 1) / 16; ++bJ) {
 #pragma scop
-        for (int ii = 0; ii < BLOCK_SIZE_RESTRICT; ++ii) {
-          for (int jj = 0; jj < BLOCK_SIZE_RESTRICT; ++jj) {
-            if (bI * BLOCK_SIZE_RESTRICT + ii > 0 &&
-                bJ * BLOCK_SIZE_RESTRICT + jj > 0 &&
-                bI * BLOCK_SIZE_RESTRICT + ii < NC - 1 &&
-                bJ * BLOCK_SIZE_RESTRICT + jj < NC - 1) {
-              f_c[bI * BLOCK_SIZE_RESTRICT + ii][bJ * BLOCK_SIZE_RESTRICT + jj] =
-                  (4.0 * r_f[2 * (bI * BLOCK_SIZE_RESTRICT + ii)][2 * (bJ * BLOCK_SIZE_RESTRICT + jj)] +
-                   2.0 * (r_f[2 * (bI * BLOCK_SIZE_RESTRICT + ii) - 1][2 * (bJ * BLOCK_SIZE_RESTRICT + jj)] +
-                          r_f[2 * (bI * BLOCK_SIZE_RESTRICT + ii) + 1][2 * (bJ * BLOCK_SIZE_RESTRICT + jj)] +
-                          r_f[2 * (bI * BLOCK_SIZE_RESTRICT + ii)][2 * (bJ * BLOCK_SIZE_RESTRICT + jj) - 1] +
-                          r_f[2 * (bI * BLOCK_SIZE_RESTRICT + ii)][2 * (bJ * BLOCK_SIZE_RESTRICT + jj) + 1]) +
-                   (r_f[2 * (bI * BLOCK_SIZE_RESTRICT + ii) - 1][2 * (bJ * BLOCK_SIZE_RESTRICT + jj) - 1] +
-                    r_f[2 * (bI * BLOCK_SIZE_RESTRICT + ii) - 1][2 * (bJ * BLOCK_SIZE_RESTRICT + jj) + 1] +
-                    r_f[2 * (bI * BLOCK_SIZE_RESTRICT + ii) + 1][2 * (bJ * BLOCK_SIZE_RESTRICT + jj) - 1] +
-                    r_f[2 * (bI * BLOCK_SIZE_RESTRICT + ii) + 1][2 * (bJ * BLOCK_SIZE_RESTRICT + jj) + 1])) *
+        for (int ii = 0; ii < 16; ++ii) {
+          for (int jj = 0; jj < 16; ++jj) {
+            if (bI * 16 + ii > 0 &&
+                bJ * 16 + jj > 0 &&
+                bI * 16 + ii < NC - 1 &&
+                bJ * 16 + jj < NC - 1) {
+              f_c[bI * 16 + ii][bJ * 16 + jj] =
+                  (4.0 * r_f[2 * (bI * 16 + ii)][2 * (bJ * 16 + jj)] +
+                   2.0 * (r_f[2 * (bI * 16 + ii) - 1][2 * (bJ * 16 + jj)] +
+                          r_f[2 * (bI * 16 + ii) + 1][2 * (bJ * 16 + jj)] +
+                          r_f[2 * (bI * 16 + ii)][2 * (bJ * 16 + jj) - 1] +
+                          r_f[2 * (bI * 16 + ii)][2 * (bJ * 16 + jj) + 1]) +
+                   (r_f[2 * (bI * 16 + ii) - 1][2 * (bJ * 16 + jj) - 1] +
+                    r_f[2 * (bI * 16 + ii) - 1][2 * (bJ * 16 + jj) + 1] +
+                    r_f[2 * (bI * 16 + ii) + 1][2 * (bJ * 16 + jj) - 1] +
+                    r_f[2 * (bI * 16 + ii) + 1][2 * (bJ * 16 + jj) + 1])) *
                   (1.0 / 16.0);
             }
           }
@@ -206,85 +166,85 @@ static void restrict_full_weighting(double r_f[N][N], double f_c[NC][NC])
 
 static void coarse_solve_gs_inplace(double e_c[NC][NC], double f_c[NC][NC], int iters)
 {
-#pragma scop
   for (int t = 0; t < iters; ++t) {
-    for (int bi = 0; bi < (NC + BLOCK_SIZE_COARSE - 1) / BLOCK_SIZE_COARSE; ++bi) {
-      for (int bj = 0; bj < (NC + BLOCK_SIZE_COARSE - 1) / BLOCK_SIZE_COARSE; ++bj) {
-        for (int ii = 0; ii < BLOCK_SIZE_COARSE; ++ii) {
-          for (int jj = 0; jj < BLOCK_SIZE_COARSE; ++jj) {
-            if (bi * BLOCK_SIZE_COARSE + ii < NC &&
-                bj * BLOCK_SIZE_COARSE + jj < NC) {
-              if (bi * BLOCK_SIZE_COARSE + ii > 0 &&
-                  bj * BLOCK_SIZE_COARSE + jj > 0 &&
-                  bi * BLOCK_SIZE_COARSE + ii < NC - 1 &&
-                  bj * BLOCK_SIZE_COARSE + jj < NC - 1) {
-                e_c[bi * BLOCK_SIZE_COARSE + ii][bj * BLOCK_SIZE_COARSE + jj] =
-                    (f_c[bi * BLOCK_SIZE_COARSE + ii][bj * BLOCK_SIZE_COARSE + jj] +
-                     e_c[bi * BLOCK_SIZE_COARSE + ii - 1][bj * BLOCK_SIZE_COARSE + jj] +
-                     e_c[bi * BLOCK_SIZE_COARSE + ii + 1][bj * BLOCK_SIZE_COARSE + jj] +
-                     e_c[bi * BLOCK_SIZE_COARSE + ii][bj * BLOCK_SIZE_COARSE + jj - 1] +
-                     e_c[bi * BLOCK_SIZE_COARSE + ii][bj * BLOCK_SIZE_COARSE + jj + 1]) *
+    for (int bi = 0; bi < (NC + 8 - 1) / 8; ++bi) {
+      for (int bj = 0; bj < (NC + 8 - 1) / 8; ++bj) {
+#pragma scop
+        for (int ii = 0; ii < 8; ++ii) {
+          for (int jj = 0; jj < 8; ++jj) {
+            if (bi * 8 + ii < NC &&
+                bj * 8 + jj < NC) {
+              if (bi * 8 + ii > 0 &&
+                  bj * 8 + jj > 0 &&
+                  bi * 8 + ii < NC - 1 &&
+                  bj * 8 + jj < NC - 1) {
+                e_c[bi * 8 + ii][bj * 8 + jj] =
+                    (f_c[bi * 8 + ii][bj * 8 + jj] +
+                     e_c[bi * 8 + ii - 1][bj * 8 + jj] +
+                     e_c[bi * 8 + ii + 1][bj * 8 + jj] +
+                     e_c[bi * 8 + ii][bj * 8 + jj - 1] +
+                     e_c[bi * 8 + ii][bj * 8 + jj + 1]) *
                     0.25;
               }
             }
           }
         }
+#pragma endscop
       }
     }
   }
-#pragma endscop
 }
 
 static void prolong_and_correct(double u[N][N], double e_c[NC][NC])
 {
-    for (int bI = 0; bI < (NC + BLOCK_SIZE_PROLONG - 1) / BLOCK_SIZE_PROLONG; ++bI) {
-      for (int bJ = 0; bJ < (NC + BLOCK_SIZE_PROLONG - 1) / BLOCK_SIZE_PROLONG; ++bJ) {
+    for (int bI = 0; bI < (NC + 32 - 1) / 32; ++bI) {
+      for (int bJ = 0; bJ < (NC + 32 - 1) / 32; ++bJ) {
 #pragma scop
-        for (int ii = 0; ii < BLOCK_SIZE_PROLONG; ++ii) {
-          for (int jj = 0; jj < BLOCK_SIZE_PROLONG; ++jj) {
-            if (bI * BLOCK_SIZE_PROLONG + ii > 0 &&
-                bJ * BLOCK_SIZE_PROLONG + jj > 0 &&
-                bI * BLOCK_SIZE_PROLONG + ii < NC &&
-                bJ * BLOCK_SIZE_PROLONG + jj < NC) {
-              u[2 * (bI * BLOCK_SIZE_PROLONG + ii)][2 * (bJ * BLOCK_SIZE_PROLONG + jj)] +=
-                  e_c[bI * BLOCK_SIZE_PROLONG + ii][bJ * BLOCK_SIZE_PROLONG + jj];
+        for (int ii = 0; ii < 32; ++ii) {
+          for (int jj = 0; jj < 32; ++jj) {
+            if (bI * 32 + ii > 0 &&
+                bJ * 32 + jj > 0 &&
+                bI * 32 + ii < NC &&
+                bJ * 32 + jj < NC) {
+              u[2 * (bI * 32 + ii)][2 * (bJ * 32 + jj)] +=
+                  e_c[bI * 32 + ii][bJ * 32 + jj];
             }
           }
         }
 
-        for (int ii = 0; ii < BLOCK_SIZE_PROLONG; ++ii) {
-          for (int jj = 0; jj < BLOCK_SIZE_PROLONG; ++jj) {
-            if (bI * BLOCK_SIZE_PROLONG + ii + 1 < NC &&
-                bJ * BLOCK_SIZE_PROLONG + jj > 0 &&
-                bJ * BLOCK_SIZE_PROLONG + jj < NC) {
-              u[2 * (bI * BLOCK_SIZE_PROLONG + ii) + 1][2 * (bJ * BLOCK_SIZE_PROLONG + jj)] +=
-                  0.5 * (e_c[bI * BLOCK_SIZE_PROLONG + ii][bJ * BLOCK_SIZE_PROLONG + jj] +
-                         e_c[bI * BLOCK_SIZE_PROLONG + ii + 1][bJ * BLOCK_SIZE_PROLONG + jj]);
+        for (int ii = 0; ii < 32; ++ii) {
+          for (int jj = 0; jj < 32; ++jj) {
+            if (bI * 32 + ii + 1 < NC &&
+                bJ * 32 + jj > 0 &&
+                bJ * 32 + jj < NC) {
+              u[2 * (bI * 32 + ii) + 1][2 * (bJ * 32 + jj)] +=
+                  0.5 * (e_c[bI * 32 + ii][bJ * 32 + jj] +
+                         e_c[bI * 32 + ii + 1][bJ * 32 + jj]);
             }
           }
         }
 
-        for (int ii = 0; ii < BLOCK_SIZE_PROLONG; ++ii) {
-          for (int jj = 0; jj < BLOCK_SIZE_PROLONG; ++jj) {
-            if (bJ * BLOCK_SIZE_PROLONG + jj + 1 < NC &&
-                bI * BLOCK_SIZE_PROLONG + ii > 0 &&
-                bI * BLOCK_SIZE_PROLONG + ii < NC) {
-              u[2 * (bI * BLOCK_SIZE_PROLONG + ii)][2 * (bJ * BLOCK_SIZE_PROLONG + jj) + 1] +=
-                  0.5 * (e_c[bI * BLOCK_SIZE_PROLONG + ii][bJ * BLOCK_SIZE_PROLONG + jj] +
-                         e_c[bI * BLOCK_SIZE_PROLONG + ii][bJ * BLOCK_SIZE_PROLONG + jj + 1]);
+        for (int ii = 0; ii < 32; ++ii) {
+          for (int jj = 0; jj < 32; ++jj) {
+            if (bJ * 32 + jj + 1 < NC &&
+                bI * 32 + ii > 0 &&
+                bI * 32 + ii < NC) {
+              u[2 * (bI * 32 + ii)][2 * (bJ * 32 + jj) + 1] +=
+                  0.5 * (e_c[bI * 32 + ii][bJ * 32 + jj] +
+                         e_c[bI * 32 + ii][bJ * 32 + jj + 1]);
             }
           }
         }
 
-        for (int ii = 0; ii < BLOCK_SIZE_PROLONG; ++ii) {
-          for (int jj = 0; jj < BLOCK_SIZE_PROLONG; ++jj) {
-            if (bI * BLOCK_SIZE_PROLONG + ii + 1 < NC &&
-                bJ * BLOCK_SIZE_PROLONG + jj + 1 < NC) {
-              u[2 * (bI * BLOCK_SIZE_PROLONG + ii) + 1][2 * (bJ * BLOCK_SIZE_PROLONG + jj) + 1] +=
-                  0.25 * (e_c[bI * BLOCK_SIZE_PROLONG + ii][bJ * BLOCK_SIZE_PROLONG + jj] +
-                          e_c[bI * BLOCK_SIZE_PROLONG + ii + 1][bJ * BLOCK_SIZE_PROLONG + jj] +
-                          e_c[bI * BLOCK_SIZE_PROLONG + ii][bJ * BLOCK_SIZE_PROLONG + jj + 1] +
-                          e_c[bI * BLOCK_SIZE_PROLONG + ii + 1][bJ * BLOCK_SIZE_PROLONG + jj + 1]);
+        for (int ii = 0; ii < 32; ++ii) {
+          for (int jj = 0; jj < 32; ++jj) {
+            if (bI * 32 + ii + 1 < NC &&
+                bJ * 32 + jj + 1 < NC) {
+              u[2 * (bI * 32 + ii) + 1][2 * (bJ * 32 + jj) + 1] +=
+                  0.25 * (e_c[bI * 32 + ii][bJ * 32 + jj] +
+                          e_c[bI * 32 + ii + 1][bJ * 32 + jj] +
+                          e_c[bI * 32 + ii][bJ * 32 + jj + 1] +
+                          e_c[bI * 32 + ii + 1][bJ * 32 + jj + 1]);
             }
           }
         }

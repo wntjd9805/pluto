@@ -1,4 +1,5 @@
 SRC= trmm_blocked_pluto
+CFLAGS += -DSMALL_DATASET
 
 PLCFLAGS =  #--codegen-context=100
 TILEFLAGS = #--second-level-tile

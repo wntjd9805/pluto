@@ -22,13 +22,6 @@ extern "C" {
 #define MAT_N   512
 #define EPS_VAL 1e-12
 
-#ifndef BLOCK_SIZE_NORM
-#define BLOCK_SIZE_NORM 256
-#endif
-#ifndef BLOCK_SIZE_SCALE
-#define BLOCK_SIZE_SCALE 256
-#endif
-
 // ---------------------------------------------------------------------------
 // Utilities
 // ---------------------------------------------------------------------------
@@ -66,17 +59,17 @@ void ruiz_equilibration(
     #pragma endscop
 
     // (1) norms: one pass over A, blocked
-    for (int bi = 0; bi < (MAT_N + BLOCK_SIZE_NORM - 1) / BLOCK_SIZE_NORM; ++bi) {
-      for (int bj = 0; bj < (MAT_N + BLOCK_SIZE_NORM - 1) / BLOCK_SIZE_NORM; ++bj) {
+    for (int bi = 0; bi < (MAT_N + 256 - 1) / 256; ++bi) {
+      for (int bj = 0; bj < (MAT_N + 256 - 1) / 256; ++bj) {
         #pragma scop
-        for (int ii = 0; ii < BLOCK_SIZE_NORM; ++ii) {   
-          for (int jj = 0; jj < BLOCK_SIZE_NORM; ++jj) {
+        for (int ii = 0; ii < 256; ++ii) {   
+          for (int jj = 0; jj < 256; ++jj) {
             // 가장 inner에서 범위 체크
-            if (bi * BLOCK_SIZE_NORM + ii < MAT_N &&
-                bj * BLOCK_SIZE_NORM + jj < MAT_N)
+            if (bi * 256 + ii < MAT_N &&
+                bj * 256 + jj < MAT_N)
             {
-              row_sq[bi * BLOCK_SIZE_NORM + ii] += A[bi * BLOCK_SIZE_NORM + ii][bj * BLOCK_SIZE_NORM + jj] * A[bi * BLOCK_SIZE_NORM + ii][bj * BLOCK_SIZE_NORM + jj];
-              col_sq[bj * BLOCK_SIZE_NORM + jj] += A[bi * BLOCK_SIZE_NORM + ii][bj * BLOCK_SIZE_NORM + jj] * A[bi * BLOCK_SIZE_NORM + ii][bj * BLOCK_SIZE_NORM + jj];
+              row_sq[bi * 256 + ii] += A[bi * 256 + ii][bj * 256 + jj] * A[bi * 256 + ii][bj * 256 + jj];
+              col_sq[bj * 256 + jj] += A[bi * 256 + ii][bj * 256 + jj] * A[bi * 256 + ii][bj * 256 + jj];
             }
           }
         }
@@ -94,20 +87,20 @@ void ruiz_equilibration(
 
     // // (3) apply scaling in-place (blocked)
    
-    for (int bi = 0; bi < (MAT_N + BLOCK_SIZE_SCALE - 1) / BLOCK_SIZE_SCALE; ++bi) {
-      for (int bj = 0; bj < (MAT_N + BLOCK_SIZE_SCALE - 1) / BLOCK_SIZE_SCALE; ++bj) {
+    for (int bi = 0; bi < (MAT_N + 256 - 1) / 256; ++bi) {
+      for (int bj = 0; bj < (MAT_N + 256 - 1) / 256; ++bj) {
          #pragma scop
-        for (int ii = 0; ii < BLOCK_SIZE_SCALE; ++ii) {
-          for (int jj = 0; jj < BLOCK_SIZE_SCALE; ++jj) {
+        for (int ii = 0; ii < 256; ++ii) {
+          for (int jj = 0; jj < 256; ++jj) {
 
             // 가장 inner에서 범위 체크
-            if (bi * BLOCK_SIZE_SCALE + ii < MAT_N &&
-                bj * BLOCK_SIZE_SCALE + jj < MAT_N)
+            if (bi * 256 + ii < MAT_N &&
+                bj * 256 + jj < MAT_N)
             {
-              A[bi * BLOCK_SIZE_SCALE + ii][bj * BLOCK_SIZE_SCALE + jj] =
-                  r[bi * BLOCK_SIZE_SCALE + ii] *
-                  A[bi * BLOCK_SIZE_SCALE + ii][bj * BLOCK_SIZE_SCALE + jj] *
-                  c[bj * BLOCK_SIZE_SCALE + jj];
+              A[bi * 256 + ii][bj * 256 + jj] =
+                  r[bi * 256 + ii] *
+                  A[bi * 256 + ii][bj * 256 + jj] *
+                  c[bj * 256 + jj];
             }
           }
         }
