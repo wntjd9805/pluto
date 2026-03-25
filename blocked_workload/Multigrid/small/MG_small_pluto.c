@@ -61,10 +61,10 @@ static void *xmalloc_align64(size_t bytes)
 
 static void smooth_gs_inplace(double u[N][N], double f[N][N], int sweeps)
 {
-  for (int s = 0; s < sweeps; ++s) {
-    for (int bi = 0; bi < (N + 2 - 1) / 2; ++bi) {
-      for (int bj = 0; bj < (N + 2 - 1) / 2; ++bj) {
 #pragma scop
+  for (int s = 0; s < sweeps; ++s) {
+    for (int bi = 0; bi < 16; ++bi) {
+      for (int bj = 0; bj < 16; ++bj) {
         for (int ii = 0; ii < 2; ++ii) {
           for (int jj = 0; jj < 2; ++jj) {
             if (bi * 2 + ii < N &&
@@ -84,10 +84,10 @@ static void smooth_gs_inplace(double u[N][N], double f[N][N], int sweeps)
             }
           }
         }
-#pragma endscop
       }
     }
   }
+#pragma endscop
 }
 
 static void compute_residual(double u[N][N], double f[N][N], double r[N][N])
@@ -166,10 +166,10 @@ static void restrict_full_weighting(double r_f[N][N], double f_c[NC][NC])
 
 static void coarse_solve_gs_inplace(double e_c[NC][NC], double f_c[NC][NC], int iters)
 {
-  for (int t = 0; t < iters; ++t) {
-    for (int bi = 0; bi < (NC + 8 - 1) / 8; ++bi) {
-      for (int bj = 0; bj < (NC + 8 - 1) / 8; ++bj) {
 #pragma scop
+  for (int t = 0; t < iters; ++t) {
+    for (int bi = 0; bi < 2; ++bi) {
+      for (int bj = 0; bj < 2; ++bj) {
         for (int ii = 0; ii < 8; ++ii) {
           for (int jj = 0; jj < 8; ++jj) {
             if (bi * 8 + ii < NC &&
@@ -189,10 +189,10 @@ static void coarse_solve_gs_inplace(double e_c[NC][NC], double f_c[NC][NC], int 
             }
           }
         }
-#pragma endscop
       }
     }
   }
+#pragma endscop
 }
 
 static void prolong_and_correct(double u[N][N], double e_c[NC][NC])
