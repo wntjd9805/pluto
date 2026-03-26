@@ -22,6 +22,14 @@ extern "C" {
 #define MAT_N   128
 #define EPS_VAL 1e-12
 
+#ifndef BLOCK_SIZE_NORM
+#define BLOCK_SIZE_NORM 128
+#endif
+
+#ifndef BLOCK_SIZE_SCALE
+#define BLOCK_SIZE_SCALE 128
+#endif
+
 // ---------------------------------------------------------------------------
 // Utilities
 // ---------------------------------------------------------------------------
@@ -50,53 +58,43 @@ void ruiz_equilibration(
     double c[MAT_N])
 {
   {
-    // (0) init row_sq / col_sq
     #pragma scop
+    // (0) init row_sq / col_sq
     for (int i = 0; i < MAT_N; ++i) {
       row_sq[i] = 0.0;
       col_sq[i] = 0.0;
     }
-    #pragma endscop
 
     // (1) norms: one pass over A, blocked
-    for (int bi = 0; bi < (MAT_N + 128 - 1) / 128; ++bi) {
-      for (int bj = 0; bj < (MAT_N + 128 - 1) / 128; ++bj) {
-        #pragma scop
-        for (int ii = 0; ii < 128; ++ii) {   
+    for (int bi = 0; bi < 1; ++bi) {
+      for (int bj = 0; bj < 1; ++bj) {
+        for (int ii = 0; ii < 128; ++ii) {
           for (int jj = 0; jj < 128; ++jj) {
             // 가장 inner에서 범위 체크
             if (bi * 128 + ii < MAT_N &&
-                bj * 128 + jj < MAT_N)
-            {
+                bj * 128 + jj < MAT_N) {
               row_sq[bi * 128 + ii] += A[bi * 128 + ii][bj * 128 + jj] * A[bi * 128 + ii][bj * 128 + jj];
               col_sq[bj * 128 + jj] += A[bi * 128 + ii][bj * 128 + jj] * A[bi * 128 + ii][bj * 128 + jj];
             }
           }
         }
-        #pragma endscop
       }
     }
 
     // (2) compute r,c
-    #pragma scop
     for (int i = 0; i < MAT_N; ++i) {
       r[i] = 1.0 / sqrt(row_sq[i] + EPS_VAL);
       c[i] = 1.0 / sqrt(col_sq[i] + EPS_VAL);
     }
-    #pragma endscop
 
-    // // (3) apply scaling in-place (blocked)
-   
-    for (int bi = 0; bi < (MAT_N + 128 - 1) / 128; ++bi) {
-      for (int bj = 0; bj < (MAT_N + 128 - 1) / 128; ++bj) {
-         #pragma scop
+    // (3) apply scaling in-place (blocked)
+    for (int bi = 0; bi < 1; ++bi) {
+      for (int bj = 0; bj < 1; ++bj) {
         for (int ii = 0; ii < 128; ++ii) {
           for (int jj = 0; jj < 128; ++jj) {
-
             // 가장 inner에서 범위 체크
             if (bi * 128 + ii < MAT_N &&
-                bj * 128 + jj < MAT_N)
-            {
+                bj * 128 + jj < MAT_N) {
               A[bi * 128 + ii][bj * 128 + jj] =
                   r[bi * 128 + ii] *
                   A[bi * 128 + ii][bj * 128 + jj] *
@@ -104,9 +102,9 @@ void ruiz_equilibration(
             }
           }
         }
-        #pragma endscop
       }
     }
+    #pragma endscop
   }
 }
 

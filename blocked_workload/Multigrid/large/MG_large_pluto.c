@@ -21,6 +21,18 @@ extern "C" {
 #define POST_SMOOTH 2
 #define COARSE_ITERS 10
 
+#ifndef BLOCK_SIZE_RESIDUAL
+#define BLOCK_SIZE_RESIDUAL 256
+#endif
+
+#ifndef BLOCK_SIZE_RESTRICT
+#define BLOCK_SIZE_RESTRICT 32
+#endif
+
+#ifndef BLOCK_SIZE_PROLONG
+#define BLOCK_SIZE_PROLONG 128
+#endif
+
 
 static void init_random_2d(double *A, int m, int n)
 {
@@ -101,8 +113,8 @@ static void compute_residual(double u[N][N], double f[N][N], double r[N][N])
     r[N - 1][j] = 0.0;
   }
 
-    for (int bi = 0; bi < (N + 256 - 1) / 256; ++bi) {
-      for (int bj = 0; bj < (N + 256 - 1) / 256; ++bj) {
+    for (int bi = 0; bi < (N + BLOCK_SIZE_RESIDUAL - 1) / BLOCK_SIZE_RESIDUAL; ++bi) {
+      for (int bj = 0; bj < (N + BLOCK_SIZE_RESIDUAL - 1) / BLOCK_SIZE_RESIDUAL; ++bj) {
 #pragma scop
         for (int ii = 0; ii < 256; ++ii) {
           for (int jj = 0; jj < 256; ++jj) {
@@ -136,8 +148,8 @@ static void restrict_full_weighting(double r_f[N][N], double f_c[NC][NC])
     f_c[NC - 1][j] = 0.0;
   }
 
-    for (int bI = 0; bI < (NC + 32 - 1) / 32; ++bI) {
-      for (int bJ = 0; bJ < (NC + 32 - 1) / 32; ++bJ) {
+    for (int bI = 0; bI < (NC + BLOCK_SIZE_RESTRICT - 1) / BLOCK_SIZE_RESTRICT; ++bI) {
+      for (int bJ = 0; bJ < (NC + BLOCK_SIZE_RESTRICT - 1) / BLOCK_SIZE_RESTRICT; ++bJ) {
 #pragma scop
         for (int ii = 0; ii < 32; ++ii) {
           for (int jj = 0; jj < 32; ++jj) {
@@ -197,8 +209,8 @@ static void coarse_solve_gs_inplace(double e_c[NC][NC], double f_c[NC][NC], int 
 
 static void prolong_and_correct(double u[N][N], double e_c[NC][NC])
 {
-    for (int bI = 0; bI < (NC + 128 - 1) / 128; ++bI) {
-      for (int bJ = 0; bJ < (NC + 128 - 1) / 128; ++bJ) {
+    for (int bI = 0; bI < (NC + BLOCK_SIZE_PROLONG - 1) / BLOCK_SIZE_PROLONG; ++bI) {
+      for (int bJ = 0; bJ < (NC + BLOCK_SIZE_PROLONG - 1) / BLOCK_SIZE_PROLONG; ++bJ) {
 #pragma scop
         for (int ii = 0; ii < 128; ++ii) {
           for (int jj = 0; jj < 128; ++jj) {
