@@ -274,13 +274,11 @@ static void vcycle_1level(
   compute_residual(u, f, r);
   restrict_full_weighting(r, f_c);
 
-#pragma scop
   for (int i = 0; i < NC; ++i) {
     for (int j = 0; j < NC; ++j) {
       e_c[i][j] = 0.0;
     }
   }
-#pragma endscop
 
   coarse_solve_gs_inplace(e_c, f_c, COARSE_ITERS);
   prolong_and_correct(u, e_c);
