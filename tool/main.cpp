@@ -109,7 +109,7 @@ void usage_message(void) {
       "upper bounds for dependences from different connected components\n");
   fprintf(stdout, "       --[no]prevector           Mark loops for (icc/gcc) "
                   "vectorization (enabled by default)\n");
-  fprintf(stdout, "       --multipar                Extract all degrees of "
+  fprintf(stdout, "       --multipar | --multipipe  Extract all degrees of "
                   "parallelism [disabled by default];\n");
   fprintf(stdout, "                                    by default one degree "
                   "is extracted within any schedule sub-tree (if it exists)\n");
@@ -236,6 +236,7 @@ int main(int argc, char *argv[]) {
     {"ft", required_argument, 0, 'f'},
     {"lt", required_argument, 0, 'l'},
     {"multipar", no_argument, &options->multipar, 1},
+    {"multipipe", no_argument, &options->multipar, 1},
     {"second-level-tile", no_argument, &options->second_level_tile, 1},
     {"determine-tile-size", no_argument, (int *)&options->find_tile_sizes,
      true},

@@ -13,6 +13,7 @@ RUN_TESTS=1
 DO_INSTALL=1
 PERSIST_ENV=1
 INSTALL_DEPS=1
+CLEAN_BUILD=0
 
 usage() {
   cat <<'EOF'
@@ -27,6 +28,7 @@ Options:
   --skip-tests           skip make check-pluto
   --no-install           skip make install
   --no-persist-env       do not append LLVM exports to ~/.bashrc
+  --clean                run make clean before building when Makefile exists
   -h, --help             show this help
 
 Env vars:
@@ -71,6 +73,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-persist-env)
       PERSIST_ENV=0
+      shift
+      ;;
+    --clean)
+      CLEAN_BUILD=1
       shift
       ;;
     -h|--help)
@@ -125,6 +131,71 @@ install_deps_if_needed() {
 
 install_deps_if_needed
 
+sync_submodules_if_needed() {
+  if [[ -f .gitmodules ]]; then
+    echo "[pluto-install] syncing submodules"
+    git submodule update --init --recursive
+  fi
+}
+
+ensure_pet_isl_symlink() {
+  local isl_dir="${ROOT_DIR}/isl"
+  local pet_dir="${ROOT_DIR}/pet"
+  local pet_isl="${pet_dir}/isl"
+  local expected_target="../isl"
+
+  if [[ ! -d "${isl_dir}" ]]; then
+    echo "Missing isl source directory: ${isl_dir}" >&2
+    echo "Run git submodule update --init --recursive, then retry." >&2
+    exit 1
+  fi
+
+  if [[ ! -d "${pet_dir}" ]]; then
+    echo "Missing pet source directory: ${pet_dir}" >&2
+    echo "Run git submodule update --init --recursive, then retry." >&2
+    exit 1
+  fi
+
+  if [[ -L "${pet_isl}" ]]; then
+    local current_target
+    current_target="$(readlink "${pet_isl}")"
+
+    if [[ "${current_target}" == "${expected_target}" ]]; then
+      echo "[pluto-install] pet/isl symlink already exists (${current_target})"
+      return
+    fi
+
+    echo "[pluto-install] replacing pet/isl symlink (${current_target} -> ${expected_target})"
+    rm -f "${pet_isl}"
+  elif [[ -e "${pet_isl}" ]]; then
+    if [[ -d "${pet_isl}" ]]; then
+      echo "[pluto-install] pet/isl already exists as a directory; leaving it unchanged"
+      return
+    fi
+
+    echo "Cannot create ${pet_isl}: path already exists and is not a symlink/directory" >&2
+    exit 1
+  fi
+
+  if [[ ! -e "${pet_isl}" && ! -L "${pet_isl}" ]]; then
+    echo "[pluto-install] creating pet/isl -> ${expected_target}"
+    ln -s "${expected_target}" "${pet_isl}"
+  fi
+}
+
+normalize_autotools_timestamps() {
+  echo "[pluto-install] normalizing autotools timestamps"
+  # Avoid unintended autotools reruns from tiny mtime skews while keeping
+  # generated files newer than the maintainer-mode inputs they depend on.
+  find . -type f \( -name 'Makefile.am' -o -name 'configure.ac' -o -path '*/m4/*.m4' \) -exec touch {} +
+  sleep 1
+  find . -type f \( -name 'aclocal.m4' \) -exec touch {} +
+  sleep 1
+  find . -type f \( -name 'configure' -o -name 'Makefile.in' -o -name 'config.h.in' -o -name 'isl_config.h.in' \) -exec touch {} +
+  sleep 1
+  find . -type f \( -name 'config.status' -o -name 'Makefile' -o -name 'config.h' -o -name 'isl_config.h' -o -name 'stamp-h*' \) -exec touch {} +
+}
+
 if [[ -z "${FILECHECK_BIN}" && -d "${HYPERF_HOME}/llvm-project/build/bin" ]]; then
   FILECHECK_BIN="${HYPERF_HOME}/llvm-project/build/bin"
 fi
@@ -174,14 +245,22 @@ echo "[pluto-install] FILECHECK_BIN=${FILECHECK_BIN:-<none>}"
 echo "[pluto-install] LLVM_PREFIX=${LLVM_PREFIX}"
 echo "[pluto-install] INSTALL_PREFIX=${INSTALL_PREFIX}"
 
+sync_submodules_if_needed
+ensure_pet_isl_symlink
+
 if [[ ! -x ./configure ]]; then
   echo "[pluto-install] configure not found, running ./autogen.sh"
   ./autogen.sh
 fi
 
-if [[ -f .gitmodules ]]; then
-  echo "[pluto-install] syncing submodules"
-  git submodule update --init --recursive
+if [[ "${CLEAN_BUILD}" -eq 1 ]]; then
+  if [[ -f Makefile ]]; then
+    normalize_autotools_timestamps
+    echo "[pluto-install] cleaning previous build"
+    make clean TEXI2DVI=true
+  else
+    echo "[pluto-install] skipping clean (Makefile not found yet)"
+  fi
 fi
 
 echo "[pluto-install] running configure"
@@ -189,24 +268,23 @@ configure_args=(
   "--prefix=${INSTALL_PREFIX}"
   "--with-clang-prefix=${CLANG_PREFIX}"
 )
-./configure "${configure_args[@]}"
+# CLOOG's doc build is optional, but some texi2dvi installations return a
+# non-zero exit status after producing the PDF, which breaks `make all`.
+env ac_cv_prog_TEXI2DVI= ./configure "${configure_args[@]}"
 
-echo "[pluto-install] normalizing autotools timestamps"
-# Avoid unintended automake reruns from tiny mtime skews (e.g. aclocal.m4 > Makefile.in).
-find . -type f \( -name 'aclocal.m4' -o -name 'configure.ac' -o -name 'Makefile.am' -o -path '*/m4/*.m4' \) -exec touch {} +
-find . -type f \( -name 'configure' -o -name 'Makefile.in' \) -exec touch {} +
+normalize_autotools_timestamps
 
 echo "[pluto-install] building"
-make -j"$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)"
+make -j"$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)" TEXI2DVI=true
 
 if [[ "${RUN_TESTS}" -eq 1 ]]; then
   echo "[pluto-install] running tests (check-pluto)"
-  make check-pluto
+  make check-pluto TEXI2DVI=true
 fi
 
 if [[ "${DO_INSTALL}" -eq 1 ]]; then
   echo "[pluto-install] installing"
-  if ! make install; then
+  if ! make install TEXI2DVI=true; then
     cat <<EOF >&2
 make install failed (likely permission issue for prefix: ${INSTALL_PREFIX}).
 Try one of:
